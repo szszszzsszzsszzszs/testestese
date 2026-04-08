@@ -278,9 +278,14 @@ _G.invisibleStealEnabled = false
 _G.RecoveryInProgress = false
 
 local function getControls()
-	local playerScripts = LocalPlayer:WaitForChild("PlayerScripts")
-	local playerModule = require(playerScripts:WaitForChild("PlayerModule"))
-	return playerModule:GetControls()
+	local ok, result = pcall(function()
+		local playerScripts = LocalPlayer:WaitForChild("PlayerScripts", 10)
+		if not playerScripts then return nil end
+		local playerModule = playerScripts:WaitForChild("PlayerModule", 10)
+		if not playerModule then return nil end
+		return require(playerModule):GetControls()
+	end)
+	return ok and result or nil
 end
 
 local Controls = getControls()
@@ -1264,16 +1269,29 @@ do
 end
 
 task.spawn(function()
-    local Packages = ReplicatedStorage:WaitForChild("Packages")
-    local Datas    = ReplicatedStorage:WaitForChild("Datas")
-    local Shared   = ReplicatedStorage:WaitForChild("Shared")
-    local Utils    = ReplicatedStorage:WaitForChild("Utils")
+    local Packages = ReplicatedStorage:WaitForChild("Packages", 10)
+    local Datas    = ReplicatedStorage:WaitForChild("Datas", 10)
+    local Shared   = ReplicatedStorage:WaitForChild("Shared", 10)
+    local Utils    = ReplicatedStorage:WaitForChild("Utils", 10)
+    
+    if not (Packages and Datas and Shared and Utils) then
+        warn("[Lightning McQueen] Required modules not found - some features disabled")
+        return
+    end
 
-    local Synchronizer  = require(Packages:WaitForChild("Synchronizer"))
-    local AnimalsData   = require(Datas:WaitForChild("Animals"))
-    local AnimalsShared = require(Shared:WaitForChild("Animals"))
-    local NumberUtils   = require(Utils:WaitForChild("NumberUtils"))
-
+    local Synchronizer, AnimalsData, AnimalsShared, NumberUtils
+    pcall(function()
+        Synchronizer  = require(Packages:WaitForChild("Synchronizer", 10))
+        AnimalsData   = require(Datas:WaitForChild("Animals", 10))
+        AnimalsShared = require(Shared:WaitForChild("Animals", 10))
+        NumberUtils   = require(Utils:WaitForChild("NumberUtils", 10))
+    end)
+    
+    if not (Synchronizer and AnimalsData and AnimalsShared and NumberUtils) then
+        warn("[Lightning McQueen] Failed to load game modules - some features disabled")
+        return
+    end
+    
     -- Initialize SharedState variables from Config
     if Config.DefaultToPriority and Config.DefaultToHighest then
         Config.DefaultToHighest = false
@@ -7862,10 +7880,23 @@ end)
 
 
 task.spawn(function()
-    local Packages = ReplicatedStorage:WaitForChild("Packages")
-    local Datas = ReplicatedStorage:WaitForChild("Datas")
+    local Packages = ReplicatedStorage:WaitForChild("Packages", 10)
+    local Datas = ReplicatedStorage:WaitForChild("Datas", 10)
     
-    local AnimalsData = require(Datas:WaitForChild("Animals"))
+    if not (Packages and Datas) then
+        warn("[Lightning McQueen] ESP modules not found")
+        return
+    end
+    
+    local AnimalsData
+    pcall(function()
+        AnimalsData = require(Datas:WaitForChild("Animals", 10))
+    end)
+    
+    if not AnimalsData then
+        warn("[Lightning McQueen] AnimalsData module not loaded")
+        return
+    end
     
     local function getPetsByRarity(rarityName)
         local petList = {}
