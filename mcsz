@@ -25,7 +25,22 @@ local SharedState = {
 
 do
 
-    local Sync = require(game.ReplicatedStorage:WaitForChild("Packages"):WaitForChild("Synchronizer"))
+    local Sync
+    local ok = pcall(function()
+        local Packages = game.ReplicatedStorage:WaitForChild("Packages", 10)
+        if Packages then
+            local SyncModule = Packages:WaitForChild("Synchronizer", 10)
+            if SyncModule then
+                Sync = require(SyncModule)
+            end
+        end
+    end)
+    
+    if not Sync then
+        warn("[Lightning McQueen] Synchronizer module not found - some features may not work")
+        Sync = {}
+    end
+    
     local patched = 0
 
     for name, fn in pairs(Sync) do
